@@ -2,12 +2,14 @@
 
 Ejemplos educativos para explorar hashes SHA-256, prueba de trabajo (*proof of work*), bloques y validación de una cadena. Los cálculos se realizan localmente; las transacciones son datos de ejemplo y no transfieren dinero.
 
-Para empezar, ejecuta **`demo_blockchain.py`**: crea una cadena, añade dos transacciones y muestra cómo se detecta una alteración. Utiliza la clase de `Crypto3_1.py`, que representa cada transacción con un valor, un remitente, un destinatario y un concepto.
+Para probar varias transacciones dentro de un mismo bloque, ejecuta **`Crypto4.py`**. Esta versión tiene una lista de pendientes, una demostración integrada y pruebas automáticas. La demostración anterior, `demo_blockchain.py`, continúa usando `Crypto3_1.py` y crea un bloque por transacción.
 
 ## Contenido del repositorio
 
 | Archivo | Qué muestra | Cómo se utiliza |
 | --- | --- | --- |
+| [`Crypto4.py`](Crypto4.py) | Lista de transacciones pendientes y minería de varias transacciones en un bloque. | Ejecuta `python .\Crypto4.py` para ver la demostración o importa su clase `Blockchain`. |
+| [`test_crypto4.py`](test_crypto4.py) | Diez pruebas de agrupación, validación, alteraciones y conservación de pendientes ante errores. | Ejecuta `python -m unittest -v test_crypto4`. |
 | [`demo_blockchain.py`](demo_blockchain.py) | Demostración completa con tres bloques y una alteración controlada sobre una copia. | Ejecuta `python .\demo_blockchain.py`; no requiere escribir instrucciones dentro de Python. |
 | [`Cryptos.py`](Cryptos.py) | Búsqueda de un nonce cuyo hash comienza con cuatro ceros. | Ejecuta una demostración y muestra el resultado en la consola. |
 | [`Crypto2.py`](Crypto2.py) | Clases `Block` y `BlockChain`, datos pendientes y construcción de bloques. | Ejecuta una demostración que imprime una cadena inicial y una cadena con un segundo bloque. |
@@ -20,7 +22,7 @@ Para empezar, ejecuta **`demo_blockchain.py`**: crea una cadena, añade dos tran
 - PowerShell para seguir los comandos de esta guía.
 - Git para descargar el repositorio y publicar cambios.
 
-Los programas utilizan únicamente módulos incluidos con Python: `hashlib`, `time`, `datetime`, `json` y `copy`. Los ejemplos interactivos de esta guía también usan `pprint`, incluido en Python. No necesitas instalar paquetes con `pip`.
+Los programas utilizan únicamente módulos incluidos con Python: `hashlib`, `time`, `datetime`, `json`, `copy` y `math`. Las pruebas usan `unittest` y los ejemplos interactivos también usan `pprint`, ambos incluidos en Python. No necesitas instalar paquetes con `pip`.
 
 Comprueba que Python está disponible:
 
@@ -47,7 +49,98 @@ Set-Location -LiteralPath '.\Cryptos'
 
 Si el repositorio es privado, necesitarás acceso con tu cuenta de GitHub. La clonación se hace una sola vez por copia local.
 
-## Demostración con un solo comando
+## Varias transacciones por bloque: `Crypto4.py`
+
+### Ejecutar la nueva demostración
+
+En **PowerShell**, desde la carpeta del proyecto:
+
+```powershell
+python .\Crypto4.py
+```
+
+La demostración registra dos transacciones pendientes, las incluye en un único bloque y muestra la cadena completa. Después altera una copia para comprobar que la validación detecta el cambio. Entre sus mensajes aparecen estos resultados, en este orden:
+
+```text
+Pendientes antes de minar: 2
+Bloques: 2
+Transacciones del nuevo bloque: 2
+Pendientes después de minar: 0
+Cadena válida: True
+Copia alterada válida: False
+Original intacta: True
+```
+
+Son **dos bloques**: un génesis con una lista de transacciones vacía y un segundo bloque con las dos transacciones. Cada ejecución parte de una cadena nueva en memoria y termina automáticamente en PowerShell.
+
+### Usar la nueva clase paso a paso
+
+Para abrir una sesión de **Python**, ejecuta `python` desde la carpeta del proyecto. Cuando aparezca `>>>`, copia:
+
+```python
+from Crypto4 import Blockchain
+
+cadena_lotes = Blockchain()
+destino = cadena_lotes.add_transaction({
+    "Value": 50, "From": "Alice", "TO": "Bob", "Concept": "Primera prueba"
+})
+destino = cadena_lotes.add_transaction({
+    "Value": 25, "From": "Bob", "TO": "Carol", "Concept": "Segunda prueba"
+})
+
+print("Pendientes:", len(cadena_lotes.pending_transactions))
+bloque_lote = cadena_lotes.mine_block()
+print("Transacciones del bloque:", len(bloque_lote["data"]))
+print("Pendientes después:", len(cadena_lotes.pending_transactions))
+print("Cadena válida:", cadena_lotes.is_chain_valid())
+```
+
+Resultado esperado:
+
+```text
+Pendientes: 2
+Transacciones del bloque: 2
+Pendientes después: 0
+Cadena válida: True
+```
+
+Para consultar los datos completos, usa `print(bloque_lote)` o `print(cadena_lotes.chain)`. Para otro bloque, registra nuevas transacciones y vuelve a llamar a `mine_block()`; las transacciones ya minadas no vuelven a entrar en la lista de pendientes. Escribe `exit()` para regresar a PowerShell.
+
+| Operación | Comportamiento |
+| --- | --- |
+| `add_transaction(datos)` | Valida y guarda una copia de los datos; devuelve el índice del bloque al que se destinarán. |
+| `pending_transactions` | Devuelve una copia de la lista de pendientes para consultarla. |
+| `mine_block()` | Agrupa todos los pendientes, busca la prueba de trabajo y añade el bloque. Devuelve una copia del bloque creado. |
+| `get_previous_block()` | Devuelve una copia del último bloque. |
+| `is_chain_valid()` | Comprueba el génesis, la estructura, el orden de índices y fechas, los enlaces y la prueba de trabajo. |
+
+Cada transacción debe tener exactamente las claves `Value`, `From`, `TO` y `Concept`. `Value` debe ser un entero o decimal positivo y finito; los otros tres campos deben ser textos no vacíos. Esta comprobación no verifica saldos ni identidades.
+
+`mine_block()` no recibe argumentos en esta versión: primero se registran las transacciones con `add_transaction()`. Si no hay pendientes o la cadena está alterada, lanza `ValueError`. Los pendientes solo se retiran después de que el nuevo bloque se haya añadido; un fallo durante la búsqueda de la prueba de trabajo los conserva.
+
+Modificar el diccionario original, la copia devuelta de los pendientes o el bloque devuelto por `mine_block()` no modifica la cadena interna. El atributo `chain` se mantiene accesible para los ejercicios de alteración; `is_chain_valid()` comprueba su contenido.
+
+### Ejecutar las pruebas automáticas
+
+En **PowerShell**:
+
+```powershell
+python -m unittest -v test_crypto4
+```
+
+La suite ejecuta diez pruebas y debe terminar con `OK`. Comprueba la agrupación en bloques, que los pendientes no se repitan, el aislamiento de copias, los datos inválidos, la conservación de pendientes cuando falla la minería, las alteraciones y el orden de índices y fechas. No requiere paquetes adicionales.
+
+### Diferencias con las versiones anteriores
+
+- En `Crypto4.py`, `data` siempre es una lista de transacciones. El génesis tiene una lista vacía.
+- La prueba de trabajo busca un hash del **bloque completo** que comience con `0000`. El cálculo incluye las transacciones, la fecha, el índice, el enlace anterior y `proof`.
+- La representación JSON ordena las claves antes de calcular el hash. La validación conserva el orden de las transacciones, pero no depende del orden de las claves de sus diccionarios.
+- Las fechas se guardan en UTC y no retroceden respecto al bloque anterior. Se permite que dos bloques tengan la misma fecha y hora.
+- El hash original del génesis se conserva en el objeto para detectar cambios incluso cuando la cadena tiene un solo bloque. El génesis no se mina.
+
+Esta versión crea su propia cadena: no importa ni convierte cadenas de los archivos anteriores. Es un ejercicio local, sin persistencia, firmas, saldos verificados, consenso ni comunicación entre nodos. La nueva clase no incorpora el registro de nodos ni la conversión a objetos `Block` de `Crypto2.py`; ese archivo se conserva.
+
+## Demostración anterior con un solo comando
 
 Desde la carpeta del proyecto, ejecuta en **PowerShell**:
 
@@ -227,7 +320,7 @@ La demostración imprime primero una cadena con el bloque inicial y después otr
 
 Notas sobre la versión actual:
 
-- `Crypto2.py` se conserva porque incluye una lista de transacciones pendientes, registro de direcciones de nodos, conversión de datos a objetos `Block` y comprobaciones de índice y orden de fechas que `Crypto3_1.py` no incorpora. El registro de nodos es una colección local; no implementa comunicación entre equipos. La nueva demostración no depende de este archivo.
+- `Crypto2.py` conserva el registro de direcciones de nodos y la conversión de datos a objetos `Block`. `Crypto4.py` incorpora una lista de pendientes y comprobaciones de índice y orden de fechas, con una implementación propia. El registro de nodos de `Crypto2.py` es una colección local; no implementa comunicación entre equipos. Las demostraciones de `Crypto4.py` y `demo_blockchain.py` no dependen de este archivo.
 - El método `block_mining()` llama a `new_data()` con `receiver`, pero el parámetro definido se llama `recipient`. Invocar ese método produce un `TypeError`; la demostración principal usa otro recorrido y sí se ejecuta.
 - El archivo ejecuta la demostración también al importarlo. Al final vuelve a asignar `blockchain = BlockChain()`, por lo que esa variable queda con una cadena nueva que contiene solo el génesis.
 
@@ -258,7 +351,7 @@ Cadena válida: True
 
 Usa `exit()` para volver a PowerShell.
 
-## Qué comprueba la validación
+## Qué comprueba la validación de las versiones anteriores
 
 En `crypto3.py` y `Crypto3_1.py`, `is_chain_valid()` recorre la cadena a partir del segundo bloque y comprueba:
 
@@ -307,6 +400,8 @@ Para guardar documentación, sustituye `Crypto3_1.py` por `README.md` y usa un m
 
 | Situación | Qué revisar |
 | --- | --- |
+| `Crypto4.py` muestra `No hay transacciones pendientes para minar`. | Registra al menos una transacción con `add_transaction()` antes de llamar a `mine_block()`. |
+| Al cambiar de versión, `mine_block(datos)` produce `TypeError`. | En `Crypto4.py` se usa primero `add_transaction(datos)` y después `mine_block()` sin argumentos. |
 | `demo_blockchain.py` indica `No module named 'Crypto3_1'`. | Coloca los dos archivos juntos en la carpeta del proyecto y conserva el nombre `Crypto3_1.py`. |
 | `Crypto3_1.py` termina sin mostrar nada. | Es el comportamiento esperado al ejecutarlo sin `-i`: solo define una clase. Sigue la demostración interactiva. |
 | Python indica que no encuentra el archivo. | Comprueba que PowerShell esté en la carpeta del repositorio; usa `Get-Location` y `Get-ChildItem`. |
