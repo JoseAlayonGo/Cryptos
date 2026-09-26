@@ -7,10 +7,12 @@ class Blockchain:
     def __init__(self):
         self.chain = list()
         initial_block = self._create_block(
-            data= {'Value':100,
-                  'From':'1010172334',
-                  'TO':'1010172834',
-                  'Concept':'Genesis'}, proof=1, previous_hash="0", index=1
+            data= {
+            "Value": 100,
+            "From": "Alice",
+            "TO": "Bob",
+            "Concept": "Prueba",
+            }, proof=1, previous_hash="0", index=1
         )
         self.chain.append(initial_block)
 
