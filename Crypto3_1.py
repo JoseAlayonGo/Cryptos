@@ -8,7 +8,7 @@ class Blockchain:
         self.chain = list()
         initial_block = self._create_block(
             data= {'Value':100,
-                  'From':'',
+                  'From':'1010172334',
                   'TO':'1010172834',
                   'Concept':'Genesis'}, proof=1, previous_hash="0", index=1
         )
