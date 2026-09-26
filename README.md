@@ -2,12 +2,13 @@
 
 Ejemplos educativos para explorar hashes SHA-256, prueba de trabajo (*proof of work*), bloques y validación de una cadena. Los cálculos se realizan localmente; las transacciones son datos de ejemplo y no transfieren dinero.
 
-Para empezar, usa **`Crypto3_1.py`**: permite representar cada transacción con un valor, un remitente, un destinatario y un concepto.
+Para empezar, ejecuta **`demo_blockchain.py`**: crea una cadena, añade dos transacciones y muestra cómo se detecta una alteración. Utiliza la clase de `Crypto3_1.py`, que representa cada transacción con un valor, un remitente, un destinatario y un concepto.
 
 ## Contenido del repositorio
 
 | Archivo | Qué muestra | Cómo se utiliza |
 | --- | --- | --- |
+| [`demo_blockchain.py`](demo_blockchain.py) | Demostración completa con tres bloques y una alteración controlada sobre una copia. | Ejecuta `python .\demo_blockchain.py`; no requiere escribir instrucciones dentro de Python. |
 | [`Cryptos.py`](Cryptos.py) | Búsqueda de un nonce cuyo hash comienza con cuatro ceros. | Ejecuta una demostración y muestra el resultado en la consola. |
 | [`Crypto2.py`](Crypto2.py) | Clases `Block` y `BlockChain`, datos pendientes y construcción de bloques. | Ejecuta una demostración que imprime una cadena inicial y una cadena con un segundo bloque. |
 | [`crypto3.py`](crypto3.py) | Clase `Blockchain` con datos de texto, minería y validación. | Se usa desde Python interactivo; ejecutarlo por sí solo no imprime resultados. |
@@ -19,7 +20,7 @@ Para empezar, usa **`Crypto3_1.py`**: permite representar cada transacción con 
 - PowerShell para seguir los comandos de esta guía.
 - Git para descargar el repositorio y publicar cambios.
 
-Los cuatro programas utilizan únicamente módulos incluidos con Python: `hashlib`, `time`, `datetime` y `json`. Los ejemplos de esta guía también usan `pprint` y `copy`, incluidos en Python. No necesitas instalar paquetes con `pip`.
+Los programas utilizan únicamente módulos incluidos con Python: `hashlib`, `time`, `datetime`, `json` y `copy`. Los ejemplos interactivos de esta guía también usan `pprint`, incluido en Python. No necesitas instalar paquetes con `pip`.
 
 Comprueba que Python está disponible:
 
@@ -46,7 +47,36 @@ Set-Location -LiteralPath '.\Cryptos'
 
 Si el repositorio es privado, necesitarás acceso con tu cuenta de GitHub. La clonación se hace una sola vez por copia local.
 
-## Primera demostración: `Crypto3_1.py`
+## Demostración con un solo comando
+
+Desde la carpeta del proyecto, ejecuta en **PowerShell**:
+
+```powershell
+python .\demo_blockchain.py
+```
+
+El programa realiza lo siguiente:
+
+1. Crea el bloque génesis definido en `Crypto3_1.py`.
+2. Añade un bloque con una transacción de Alice a Bob por 50 y otro de Bob a Carol por 25.
+3. Muestra los tres bloques y comprueba la validez de la cadena.
+4. Crea una copia independiente y cambia de 50 a 999 el valor del segundo bloque.
+5. Comprueba que la copia alterada es inválida y que la cadena original conserva su contenido y sigue siendo válida.
+
+Además de los bloques y de los mensajes de cada paso, verás estos resultados, en este orden:
+
+```text
+Bloques: 3
+Cadena válida: True
+Copia alterada válida: False
+Original intacta: True
+```
+
+Las fechas y los hashes de los bloques cambian entre ejecuciones. Al terminar, vuelves automáticamente a PowerShell. El programa no solicita datos ni guarda la cadena en un archivo; cada ejecución comienza con una cadena nueva.
+
+Mantén `demo_blockchain.py` y `Crypto3_1.py` en la misma carpeta. La demostración utiliza la clase existente, sin duplicar su implementación. Importar `demo_blockchain` desde otro programa no inicia la demostración; esta se ejecuta cuando se llama a `main()` o se abre el archivo con Python como en el comando anterior.
+
+## Demostración interactiva: `Crypto3_1.py`
 
 ### 1. Cargar el programa
 
@@ -197,6 +227,7 @@ La demostración imprime primero una cadena con el bloque inicial y después otr
 
 Notas sobre la versión actual:
 
+- `Crypto2.py` se conserva porque incluye una lista de transacciones pendientes, registro de direcciones de nodos, conversión de datos a objetos `Block` y comprobaciones de índice y orden de fechas que `Crypto3_1.py` no incorpora. El registro de nodos es una colección local; no implementa comunicación entre equipos. La nueva demostración no depende de este archivo.
 - El método `block_mining()` llama a `new_data()` con `receiver`, pero el parámetro definido se llama `recipient`. Invocar ese método produce un `TypeError`; la demostración principal usa otro recorrido y sí se ejecuta.
 - El archivo ejecuta la demostración también al importarlo. Al final vuelve a asignar `blockchain = BlockChain()`, por lo que esa variable queda con una cadena nueva que contiene solo el génesis.
 
@@ -276,6 +307,7 @@ Para guardar documentación, sustituye `Crypto3_1.py` por `README.md` y usa un m
 
 | Situación | Qué revisar |
 | --- | --- |
+| `demo_blockchain.py` indica `No module named 'Crypto3_1'`. | Coloca los dos archivos juntos en la carpeta del proyecto y conserva el nombre `Crypto3_1.py`. |
 | `Crypto3_1.py` termina sin mostrar nada. | Es el comportamiento esperado al ejecutarlo sin `-i`: solo define una clase. Sigue la demostración interactiva. |
 | Python indica que no encuentra el archivo. | Comprueba que PowerShell esté en la carpeta del repositorio; usa `Get-Location` y `Get-ChildItem`. |
 | Un comando de PowerShell produce `SyntaxError`. | Si ves `>>>`, estás dentro de Python. Escribe `exit()` antes de usar `git`, `Set-Location` o `python`. |
